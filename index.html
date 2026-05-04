@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>DDS 2028 Clinic Checklist</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
 <style>
@@ -11,6 +11,23 @@ body{font-family:'DM Sans',sans-serif;background:#f8fafc;color:#0f172a;min-heigh
 .wrap{max-width:840px;margin:0 auto;padding:24px 16px 80px}
 h1{font-family:'DM Serif Display',serif;font-size:26px;letter-spacing:-.5px;text-align:center;margin-bottom:4px}
 .subtitle{color:#64748b;font-size:13px;text-align:center;margin-bottom:20px}
+
+/* Auth screen */
+.auth-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;gap:16px;text-align:center}
+.auth-wrap h1{margin-bottom:8px}
+.auth-wrap p{color:#64748b;font-size:14px;max-width:340px;line-height:1.5}
+.auth-input{width:220px;padding:10px 14px;border:2px solid #cbd5e1;border-radius:10px;font-size:18px;font-family:inherit;text-align:center;letter-spacing:4px;font-weight:700}
+.auth-input:focus{outline:none;border-color:#2563eb}
+.auth-btn{padding:10px 28px;border-radius:10px;border:none;background:linear-gradient(135deg,#2563eb,#7c3aed);color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:transform .1s}
+.auth-btn:hover{transform:scale(1.02)}
+.auth-btn:active{transform:scale(.98)}
+.auth-err{color:#dc2626;font-size:13px;font-weight:600}
+.auth-switch{color:#2563eb;font-size:13px;cursor:pointer;background:none;border:none;font-family:inherit;font-weight:600;text-decoration:underline}
+.sync-badge{position:fixed;top:12px;right:12px;font-size:10px;font-weight:700;padding:4px 10px;border-radius:8px;z-index:99}
+.sync-badge.ok{background:#dcfce7;color:#16a34a}
+.sync-badge.pending{background:#fef3c7;color:#b45309}
+.sync-badge.err{background:#fee2e2;color:#dc2626}
+.logout-btn{position:fixed;top:12px;left:12px;font-size:10px;font-weight:600;padding:4px 10px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#64748b;cursor:pointer;font-family:inherit;z-index:99}
 
 /* EU Dashboard */
 .eu-dash{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:16px 18px;margin-bottom:16px}
@@ -36,7 +53,8 @@ h1{font-family:'DM Serif Display',serif;font-size:26px;letter-spacing:-.5px;text
 .oprog-fill{height:100%;border-radius:12px;transition:width .5s cubic-bezier(.4,0,.2,1)}
 .oprog-fill.done{background:linear-gradient(135deg,#16a34a,#059669)}
 .oprog-fill.active{background:linear-gradient(135deg,#2563eb,#7c3aed)}
-.oprog-pct{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#0f172a;text-shadow:0 0 8px rgba(255,255,255,.9),0 0 4px rgba(255,255,255,1);pointer-events:none;letter-spacing:.3px}
+.oprog-pct{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;pointer-events:none;letter-spacing:.3px}
+.oprog-pct.dark{color:#0f172a;text-shadow:0 0 8px rgba(255,255,255,.9),0 0 4px rgba(255,255,255,1)}
 .oprog-pct.light{color:#fff;text-shadow:none}
 .oprog-sub{text-align:center;font-size:12px;color:#64748b;margin-top:4px}
 
@@ -121,9 +139,100 @@ h1{font-family:'DM Serif Display',serif;font-size:26px;letter-spacing:-.5px;text
 </style>
 </head>
 <body>
-<div class="wrap" id="app"></div>
+<div id="app"></div>
+
+<!-- Firebase SDK (compat for simplicity in vanilla JS) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
 <script>
-const SK="dds2028-v6";
+// ─── Firebase Init ───
+firebase.initializeApp({
+  apiKey:"AIzaSyBwNQH3gHOBOLokbJfZ_jyT8MMKpYK8cjo",
+  authDomain:"clinic-checklist28.firebaseapp.com",
+  databaseURL:"https://clinic-checklist28-default-rtdb.firebaseio.com",
+  projectId:"clinic-checklist28",
+  storageBucket:"clinic-checklist28.firebasestorage.app",
+  messagingSenderId:"890958208686",
+  appId:"1:890958208686:web:2299bc7a4e9ff71b9dd73f"
+});
+const db=firebase.database();
+
+// ─── Auth state ───
+let userId=localStorage.getItem("dds28_uid")||null;
+let dbRef=null;
+let syncStatus="ok"; // "ok","pending","err"
+let debounceTimer=null;
+
+function showAuth(){
+  const app=document.getElementById('app');
+  app.innerHTML=`
+    <div class="auth-wrap">
+      <h1>🦷 Clinic Checklist</h1>
+      <p>Choose a passcode to sync your progress across devices. Use the same passcode on every device.</p>
+      <input class="auth-input" id="codeInput" type="text" maxlength="20" placeholder="passcode" autocomplete="off">
+      <div class="auth-err" id="authErr"></div>
+      <button class="auth-btn" onclick="doLogin()">Start</button>
+      <p style="color:#94a3b8;font-size:11px;margin-top:12px">Passcode is case-sensitive. Pick something only you'd know.</p>
+    </div>`;
+  document.getElementById('codeInput').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});
+  document.getElementById('codeInput').focus();
+}
+
+window.doLogin=function(){
+  const code=document.getElementById('codeInput').value.trim();
+  if(code.length<3){document.getElementById('authErr').textContent='At least 3 characters';return}
+  // Simple hash for privacy (not security-critical)
+  let hash=0;for(let i=0;i<code.length;i++){hash=((hash<<5)-hash)+code.charCodeAt(i);hash|=0}
+  userId='user_'+Math.abs(hash).toString(36);
+  localStorage.setItem("dds28_uid",userId);
+  initSync();
+};
+
+window.doLogout=function(){
+  if(dbRef)dbRef.off();
+  localStorage.removeItem("dds28_uid");
+  userId=null;dbRef=null;
+  showAuth();
+};
+
+function initSync(){
+  dbRef=db.ref('users/'+userId);
+  syncStatus="pending";
+  // Listen for remote changes
+  dbRef.on('value',snap=>{
+    const d=snap.val();
+    if(d){
+      state={counts:d.counts||{},notes:d.notes||{},euCount:d.euCount||0};
+    }
+    syncStatus="ok";
+    renderApp();
+  },err=>{
+    syncStatus="err";
+    console.error("Firebase read error:",err);
+    renderApp();
+  });
+}
+
+function pushToFirebase(){
+  if(!dbRef)return;
+  syncStatus="pending";
+  updateSyncBadge();
+  clearTimeout(debounceTimer);
+  debounceTimer=setTimeout(()=>{
+    dbRef.set(state).then(()=>{syncStatus="ok";updateSyncBadge()}).catch(e=>{syncStatus="err";updateSyncBadge();console.error(e)});
+  },500); // debounce 500ms
+}
+
+function updateSyncBadge(){
+  const el=document.getElementById('syncBadge');
+  if(!el)return;
+  if(syncStatus==="ok"){el.className="sync-badge ok";el.textContent="✓ Synced"}
+  else if(syncStatus==="pending"){el.className="sync-badge pending";el.textContent="⟳ Syncing…"}
+  else{el.className="sync-badge err";el.textContent="✕ Offline"}
+}
+
+// ─── Data ───
 const DISC=[
   {key:"dx",name:"Diagnosis & Tx Planning",color:"#2563eb",icon:"🔍"},
   {key:"em",name:"Emergency",color:"#dc2626",icon:"🚨"},
@@ -255,13 +364,10 @@ let filter="all",typeFilter=null;
 let expanded={};TRIS.forEach(t=>expanded[t]=true);
 let notesOpen={};
 
-function load(){try{const s=localStorage.getItem(SK);if(s){state={counts:{},notes:{},euCount:0,...JSON.parse(s)}}}catch{}}
-function save(){try{localStorage.setItem(SK,JSON.stringify(state))}catch{}}
 function gc(id){return state.counts[id]||0}
 function gn(id){return state.notes[id]||""}
-function esc(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
 
-// Partial progress: sum of current / sum of targets
 function calcProgress(){
   let cur=0,tot=0;
   ITEMS.forEach(i=>{cur+=Math.min(gc(i.id),i.target);tot+=i.target});
@@ -287,11 +393,16 @@ function typeBadge(t){
   return'<span class="type-badge '+t+'">'+l[t]+'</span>';
 }
 
-function render(){
+function renderApp(){
   const prog=calcProgress();
   const euVal=state.euCount||0;
   let h='';
 
+  // Sync badge + logout
+  h+='<span class="sync-badge '+(syncStatus==="ok"?'ok':syncStatus==="pending"?'pending':'err')+'" id="syncBadge">'+(syncStatus==="ok"?'✓ Synced':syncStatus==="pending"?'⟳ Syncing…':'✕ Offline')+'</span>';
+  h+='<button class="logout-btn" onclick="doLogout()">Sign out</button>';
+
+  h+='<div class="wrap">';
   h+='<h1>DDS 2028 Clinic Checklist</h1><p class="subtitle">DPBL 514c · Trimesters VI–XI</p>';
 
   // EU Dashboard
@@ -317,12 +428,12 @@ function render(){
   h+='<div class="eu-bar-wrap"><div class="eu-bar-fill" style="width:'+euPct+'%;background:'+(euVal>=650?'#16a34a':'linear-gradient(90deg,#2563eb,#7c3aed)')+'"></div></div>';
   h+='</div>';
 
-  // Overall Progress — partial
+  // Overall Progress
   h+='<div class="oprog">';
   h+='<div class="oprog-bar"><div class="oprog-fill '+(prog.pct>=100?'done':'active')+'" style="width:'+prog.pct+'%"></div></div>';
-  h+='<div class="oprog-pct'+(prog.pct>45?' light':'')+'">'+prog.pct+'% Overall Progress</div>';
+  h+='<div class="oprog-pct '+(prog.pct>45?'light':'dark')+'">'+prog.pct+'% Overall Progress</div>';
   h+='</div>';
-  h+='<p class="oprog-sub">'+prog.cur+' / '+prog.tot+' total units of progress across all requirements</p>';
+  h+='<p class="oprog-sub">'+prog.cur+' / '+prog.tot+' total units of progress</p>';
 
   // Filters
   h+='<div class="filter-row">';
@@ -351,7 +462,6 @@ function render(){
     const{fi,fc}=applyFilters(triItems,triCumuls);
     if(fi.length===0&&fc.length===0)return;
 
-    // Section progress (partial)
     let sCur=0,sTot=0;
     fi.forEach(i=>{sCur+=Math.min(gc(i.id),i.target);sTot+=i.target});
     fc.forEach(c=>{const mx=c.milestones[c.milestones.length-1].t;sCur+=Math.min(gc(c.id),mx);sTot+=mx});
@@ -369,7 +479,6 @@ function render(){
     if(isOpen){
       h+='<div class="section-body">';
 
-      // Cumulative trackers
       fc.forEach(c=>{
         const cur=gc(c.id);const mx=c.milestones[c.milestones.length-1].t;
         const allHit=cumulDone(c);const disc=DM[c.disc];
@@ -393,7 +502,6 @@ function render(){
         h+='</div>';
       });
 
-      // Regular items
       fi.forEach(item=>{
         const cur=gc(item.id);const done=cur>=item.target;const disc=DM[item.disc];
         const hasNote=!!gn(item.id);const noteOpen=!!notesOpen[item.id];
@@ -427,24 +535,27 @@ function render(){
 
   h+='<div class="bottom-wrap"><button class="reset-btn" onclick="resetAll()">Reset All</button></div>';
   h+='<div class="io-wrap">';
-  h+='<button class="io-btn" onclick="exportD()">💾 Export Progress</button>';
-  h+='<button class="io-btn" onclick="document.getElementById(\'impF\').click()">📂 Import Progress</button>';
+  h+='<button class="io-btn" onclick="exportD()">💾 Export Backup</button>';
+  h+='<button class="io-btn" onclick="document.getElementById(\'impF\').click()">📂 Import Backup</button>';
   h+='<input type="file" id="impF" accept=".json" style="display:none" onchange="importD(event)">';
   h+='</div>';
 
+  h+='</div>'; // wrap
   document.getElementById('app').innerHTML=h;
 }
 
-window.setF=function(f){filter=f;render()};
-window.setTF=function(t){typeFilter=t||null;render()};
-window.togSec=function(t){expanded[t]=!expanded[t];render()};
-window.sc=function(id,v,mx){state.counts[id]=Math.max(0,Math.min(v,mx));save();render()};
+// ─── Global handlers ───
+window.setF=function(f){filter=f;renderApp()};
+window.setTF=function(t){typeFilter=t||null;renderApp()};
+window.togSec=function(t){expanded[t]=!expanded[t];renderApp()};
+window.sc=function(id,v,mx){state.counts[id]=Math.max(0,Math.min(v,mx));pushToFirebase();renderApp()};
 window.adj=function(id,d,mx){sc(id,gc(id)+d,mx)};
-window.setEU=function(v){const n=parseInt(v,10);if(!isNaN(n)){state.euCount=Math.max(0,n);save();render()}};
-window.adjEU=function(d){state.euCount=Math.max(0,(state.euCount||0)+d);save();render()};
-window.togNote=function(id){notesOpen[id]=!notesOpen[id];render()};
-window.setNote=function(id,v){state.notes[id]=v;save()};
-window.resetAll=function(){if(confirm("Reset all progress and notes? This can't be undone.")){state={counts:{},notes:{},euCount:0};save();render()}};
+window.setEU=function(v){const n=parseInt(v,10);if(!isNaN(n)){state.euCount=Math.max(0,n);pushToFirebase();renderApp()}};
+window.adjEU=function(d){state.euCount=Math.max(0,(state.euCount||0)+d);pushToFirebase();renderApp()};
+window.togNote=function(id){notesOpen[id]=!notesOpen[id];renderApp()};
+window.setNote=function(id,v){state.notes[id]=v;pushToFirebase()};
+window.resetAll=function(){if(confirm("Reset all progress and notes? This can't be undone.")){state={counts:{},notes:{},euCount:0};pushToFirebase();renderApp()}};
+
 window.exportD=function(){
   const b=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(b);
@@ -453,12 +564,13 @@ window.exportD=function(){
 window.importD=function(e){
   const f=e.target.files[0];if(!f)return;
   const r=new FileReader();r.onload=function(ev){
-    try{const d=JSON.parse(ev.target.result);if(typeof d==='object'&&d!==null){state={counts:{},notes:{},euCount:0,...d};save();render();alert('Imported!')}}
+    try{const d=JSON.parse(ev.target.result);if(typeof d==='object'&&d!==null){state={counts:{},notes:{},euCount:0,...d};pushToFirebase();renderApp();alert('Imported!')}}
     catch{alert('Invalid file.')}
   };r.readAsText(f);e.target.value='';
 };
 
-load();render();
+// ─── Boot ───
+if(userId){initSync()}else{showAuth()}
 </script>
 </body>
 </html>
