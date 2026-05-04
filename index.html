@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DDS 2028 Clinic Checklist</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:#f8fafc;color:#0f172a;min-height:100vh}
+.wrap{max-width:840px;margin:0 auto;padding:24px 16px 80px}
+h1{font-family:'DM Serif Display',serif;font-size:26px;letter-spacing:-.5px;text-align:center;margin-bottom:4px}
+.subtitle{color:#64748b;font-size:13px;text-align:center;margin-bottom:20px}
+
+/* EU Dashboard */
+.eu-dash{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:16px 18px;margin-bottom:16px}
+.eu-dash-title{font-size:14px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.eu-input-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.eu-big-input{width:80px;text-align:center;font-size:20px;font-weight:700;border:2px solid #cbd5e1;border-radius:10px;padding:6px;font-family:inherit;background:#fff;color:#0f172a}
+.eu-big-input:focus{outline:none;border-color:#2563eb}
+.eu-of-total{font-size:14px;color:#64748b;font-weight:600}
+.eu-quick{display:flex;gap:4px;margin-left:6px}
+.eu-qbtn{padding:4px 10px;border-radius:7px;border:1.5px solid #cbd5e1;background:#fff;color:#334155;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .1s}
+.eu-qbtn:hover{background:#f1f5f9;border-color:#94a3b8}
+.eu-qbtn.minus{color:#dc2626}
+.eu-milestones{display:flex;gap:5px;flex-wrap:wrap}
+.eu-ms{font-size:11px;font-weight:600;padding:3px 10px;border-radius:8px;border:1.5px solid #e2e8f0;color:#64748b;transition:all .2s}
+.eu-ms.hit{background:#16a34a;border-color:#16a34a;color:#fff}
+.eu-ms.next{border-color:#2563eb;color:#2563eb;background:#eff6ff}
+.eu-bar-wrap{height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden;margin-top:10px}
+.eu-bar-fill{height:100%;border-radius:4px;transition:width .5s cubic-bezier(.4,0,.2,1)}
+
+/* Overall Progress */
+.oprog{position:relative;margin-bottom:16px}
+.oprog-bar{background:#e2e8f0;border-radius:12px;height:30px;overflow:hidden}
+.oprog-fill{height:100%;border-radius:12px;transition:width .5s cubic-bezier(.4,0,.2,1)}
+.oprog-fill.done{background:linear-gradient(135deg,#16a34a,#059669)}
+.oprog-fill.active{background:linear-gradient(135deg,#2563eb,#7c3aed)}
+.oprog-pct{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#0f172a;text-shadow:0 0 8px rgba(255,255,255,.9),0 0 4px rgba(255,255,255,1);pointer-events:none;letter-spacing:.3px}
+.oprog-pct.light{color:#fff;text-shadow:none}
+.oprog-sub{text-align:center;font-size:12px;color:#64748b;margin-top:4px}
+
+/* Filters */
+.filter-row{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;margin-bottom:6px}
+.filter-row.mb{margin-bottom:16px}
+.fbtn{padding:4px 11px;border-radius:18px;border:1.5px solid #cbd5e1;background:#fff;color:#64748b;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:3px}
+.fbtn:hover{border-color:#94a3b8}
+.fbtn.on{border-color:#334155;background:#334155;color:#fff}
+.fbtn.disc-on{color:#fff}
+.tbtn{padding:3px 9px;border-radius:14px;border:1.5px solid #e2e8f0;background:#fff;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;text-transform:uppercase;letter-spacing:.5px;transition:all .15s}
+.tbtn.on-exp{border-color:#0891b2;background:#0891b2;color:#fff}
+.tbtn.on-qe{border-color:#f59e0b;background:#f59e0b;color:#fff}
+.tbtn.on-ce{border-color:#dc2626;background:#dc2626;color:#fff}
+.tbtn.on-rot{border-color:#8b5cf6;background:#8b5cf6;color:#fff}
+
+/* Sections */
+.section{margin-bottom:10px;border-radius:14px;overflow:hidden;border:1px solid #e2e8f0;background:#fff}
+.section.d4{border-left:3px solid #7c3aed}
+.section-header{width:100%;display:flex;align-items:center;gap:10px;padding:12px 14px;background:none;border:none;cursor:pointer;font-family:inherit;text-align:left}
+.tri-badge{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;font-family:'DM Serif Display',serif}
+.tri-badge.d3{background:linear-gradient(135deg,rgba(37,99,235,.1),rgba(37,99,235,.05));color:#2563eb}
+.tri-badge.d4{background:linear-gradient(135deg,rgba(124,58,237,.12),rgba(124,58,237,.05));color:#7c3aed}
+.stitle{font-size:14px;font-weight:700;color:#0f172a}
+.ssub{font-size:10px;color:#94a3b8;margin-top:1px}
+.mini-bar{width:44px;height:5px;border-radius:3px;background:#e2e8f0;overflow:hidden}
+.mini-bar-fill{height:100%;border-radius:3px;transition:width .3s}
+.chev{font-size:16px;color:#94a3b8;transition:transform .2s}
+.chev.open{transform:rotate(180deg)}
+.section-body{padding:0 6px 8px}
+
+/* Items */
+.item{padding:8px 8px;border-radius:10px;transition:background .12s;margin-bottom:1px}
+.item.done-item{background:#f0fdf4}
+.item:hover:not(.done-item){background:#f8fafc}
+.item-top{display:flex;align-items:flex-start;gap:7px}
+.item-text{flex:1;font-size:13px;line-height:1.4;font-weight:500;color:#1e293b}
+.item-text.done-text{color:#94a3b8;text-decoration:line-through}
+.disc-tag{font-size:9px;font-weight:700;padding:2px 6px;border-radius:5px;white-space:nowrap;margin-top:2px}
+.type-badge{font-size:9px;font-weight:800;padding:1px 6px;border-radius:4px;text-transform:uppercase;letter-spacing:.4px;margin-top:2px;margin-right:4px}
+.type-badge.exp{background:#0891b215;color:#0891b2}
+.type-badge.qe{background:#f59e0b18;color:#b45309}
+.type-badge.ce{background:#dc262615;color:#dc2626}
+.type-badge.rot{background:#8b5cf615;color:#8b5cf6}
+
+/* Toggle */
+.toggle-row{display:flex;align-items:center;gap:8px;margin-top:6px}
+.toggle-btn{width:44px;height:24px;border-radius:12px;border:2px solid #cbd5e1;background:#e2e8f0;cursor:pointer;position:relative;transition:all .2s;padding:0}
+.toggle-btn.on{background:#16a34a;border-color:#16a34a}
+.toggle-knob{width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:1px;left:1px;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.toggle-btn.on .toggle-knob{transform:translateX(20px)}
+.toggle-label{font-size:11px;font-weight:600;color:#94a3b8}
+.toggle-label.on{color:#16a34a}
+
+/* Counter */
+.counter-row{display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap}
+.cbtn{width:26px;height:26px;border-radius:7px;border:1.5px solid #cbd5e1;background:#fff;color:#334155;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit;padding:0;transition:all .1s}
+.cbtn:hover:not(:disabled){background:#f1f5f9}
+.cbtn:disabled{opacity:.25;cursor:default}
+.cval{font-size:13px;font-weight:700;min-width:40px;text-align:center;color:#0f172a}
+.cval.done-c{color:#16a34a}
+.item-bar{flex:1;height:5px;border-radius:3px;background:#e2e8f0;overflow:hidden;min-width:40px}
+.item-bar-fill{height:100%;border-radius:3px;transition:width .3s}
+.cm-dots{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.cm-dot{font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;border:1px solid #e2e8f0;color:#94a3b8}
+.cm-dot.hit{background:#16a34a;border-color:#16a34a;color:#fff}
+
+/* Notes */
+.notes-toggle{font-size:10px;color:#94a3b8;cursor:pointer;background:none;border:none;font-family:inherit;font-weight:600;margin-top:4px;padding:2px 0}
+.notes-toggle:hover{color:#64748b}
+.notes-area{width:100%;margin-top:4px;padding:6px 8px;border:1.5px solid #e2e8f0;border-radius:8px;font-family:inherit;font-size:12px;color:#334155;resize:vertical;min-height:32px;max-height:120px;background:#fafbfc}
+.notes-area:focus{outline:none;border-color:#2563eb}
+.has-note{color:#2563eb}
+
+/* Bottom */
+.bottom-wrap{text-align:center;margin-top:20px}
+.reset-btn{padding:7px 18px;border-radius:9px;border:1.5px solid #e2e8f0;background:none;color:#94a3b8;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit}
+.reset-btn:hover{background:#fef2f2;color:#ef4444;border-color:#fca5a5}
+.io-wrap{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:10px}
+.io-btn{padding:5px 14px;border-radius:7px;border:1.5px solid #cbd5e1;background:#fff;color:#64748b;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit}
+.io-btn:hover{background:#f1f5f9}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<script>
+const SK="dds2028-v6";
+const DISC=[
+  {key:"dx",name:"Diagnosis & Tx Planning",color:"#2563eb",icon:"🔍"},
+  {key:"em",name:"Emergency",color:"#dc2626",icon:"🚨"},
+  {key:"en",name:"Endodontics",color:"#7c3aed",icon:"🦷"},
+  {key:"op",name:"Operative & Fixed Prosth",color:"#0891b2",icon:"⚙️"},
+  {key:"os",name:"Oral Surgery",color:"#ea580c",icon:"🔪"},
+  {key:"om",name:"Oral Med / Orofacial Pain",color:"#be185d",icon:"💊"},
+  {key:"pd",name:"Pediatric Dentistry",color:"#16a34a",icon:"👶"},
+  {key:"pr",name:"Prevention",color:"#059669",icon:"🛡️"},
+  {key:"pe",name:"Periodontics",color:"#9333ea",icon:"🩺"},
+  {key:"rp",name:"Removable Prosth",color:"#b45309",icon:"🦿"},
+  {key:"sp",name:"Special Patients & Geri",color:"#4f46e5",icon:"♿"},
+  {key:"co",name:"Community & Other",color:"#64748b",icon:"🏥"},
+];
+const DM={};DISC.forEach(d=>DM[d.key]=d);
+
+const CUMUL=[
+  {id:"c_sealants",name:"Pit & fissure sealants",disc:"pr",milestones:[{t:2,tri:"VI"},{t:5,tri:"VII"},{t:15,tri:"IX"},{t:25,tri:"XI"}]},
+  {id:"c_childpro",name:"Child prophys",disc:"pr",milestones:[{t:1,tri:"VI"},{t:5,tri:"VII"},{t:10,tri:"XI"}]},
+  {id:"c_fluoride",name:"Topical fluoride treatments",disc:"pr",milestones:[{t:1,tri:"VI"},{t:5,tri:"VII"},{t:8,tri:"VIII"},{t:10,tri:"XI"}]},
+  {id:"c_cambra",name:"CAMBRA experiences",disc:"pr",milestones:[{t:1,tri:"VII"},{t:4,tri:"IX"},{t:5,tri:"X"}]},
+  {id:"c_pedexam",name:"Pediatric exams",disc:"pd",milestones:[{t:3,tri:"VII"},{t:5,tri:"VIII"},{t:8,tri:"IX"},{t:10,tri:"X"}]},
+  {id:"c_pedrest",name:"Restorative procedures (Peds)",disc:"pd",milestones:[{t:5,tri:"VI"},{t:10,tri:"IX"},{t:15,tri:"X"},{t:25,tri:"XI"}]},
+  {id:"c_operative",name:"Operative experiences (incl. 2 Cl II, 2 Cl III, 2 Cl V, each ≥70%)",disc:"op",milestones:[{t:10,tri:"IX"},{t:30,tri:"X"}]},
+  {id:"c_indirect",name:"Indirect restorative experiences (min 2 same type before CE)",disc:"op",milestones:[{t:7,tri:"IX"}]},
+  {id:"c_endo",name:"Endodontic cases",disc:"en",milestones:[{t:3,tri:"XI"}]},
+  {id:"c_ossurg",name:"Minor dentoalveolar surgical procedures (≥10 pts)",disc:"os",milestones:[{t:25,tri:"XI"}]},
+  {id:"c_peridx",name:"Perio diagnosis & treatment planning experiences",disc:"pe",milestones:[{t:6,tri:"XI"}]},
+  {id:"c_periscr2",name:"Quadrants Level II/III Sc/RP",disc:"pe",milestones:[{t:9,tri:"XI"}]},
+  {id:"c_periscr1",name:"Quadrants Level I Sc/RP (or Lvl II/III subs)",disc:"pe",milestones:[{t:7,tri:"XI"}]},
+  {id:"c_perirecl",name:"Perio recall experiences (≥7 D4910, ≤3 D1110)",disc:"pe",milestones:[{t:10,tri:"XI"}]},
+  {id:"c_perireva",name:"Re-evaluation or risk assessment (≥1 re-eval)",disc:"pe",milestones:[{t:4,tri:"XI"}]},
+];
+
+const ITEMS=[
+  {id:"dx1",text:"Clinical assists (data collection/exam + Dx/Tx Planning)",target:6,tri:"VI",disc:"dx",type:"exp"},
+  {id:"op1",text:"Clinical assists in Operative Dentistry",target:2,tri:"VI",disc:"op",type:"exp"},
+  {id:"op2",text:"Clinical assists in Fixed Prosthodontics",target:2,tri:"VI",disc:"op",type:"exp"},
+  {id:"op3",text:"Clinical assists for Operative/Fixed QE or CE",target:2,tri:"VI",disc:"op",type:"exp"},
+  {id:"en1",text:"Qualifying Bench Exam — OSCE + clinical simulation",target:1,tri:"VI",disc:"en",type:"qe"},
+  {id:"os1",text:"Clinical assist in Oral Surgery",target:1,tri:"VI",disc:"os",type:"exp"},
+  {id:"pe1",text:"Milestone 1: Perio diagnosis or re-evaluation experiences",target:3,tri:"VI",disc:"pe",type:"exp"},
+  {id:"pe2",text:"Milestone 2: Sc/RP experiences (≥6 quads Lvl II/III, ≤2 Lvl I)",target:8,tri:"VI",disc:"pe",type:"exp"},
+  {id:"dx2",text:"FMX on live patient",target:1,tri:"VII",disc:"dx",type:"exp"},
+  {id:"dx6",text:"Diagnosis & Treatment Planning COMBOT #1",target:1,tri:"VII",disc:"dx",type:"exp"},
+  {id:"pd4a",text:"Pediatric diet analysis",target:1,tri:"VII",disc:"pd",type:"exp"},
+  {id:"pd4b",text:"Plaque control",target:1,tri:"VII",disc:"pd",type:"exp"},
+  {id:"pd4c",text:"Caries risk assessments (AAPD CAT)",target:5,tri:"VII",disc:"pd",type:"exp"},
+  {id:"pe3",text:"Perio clinical experience procedures (20% of total)",target:1,tri:"VII",disc:"pe",type:"exp"},
+  {id:"dx3",text:"FMX on live patient",target:1,tri:"VIII",disc:"dx",type:"exp"},
+  {id:"em1",text:"D3 Emergency rotation",target:1,tri:"VIII",disc:"em",type:"rot"},
+  {id:"em2",text:"D3 Emergency Patient QE",target:1,tri:"VIII",disc:"em",type:"qe"},
+  {id:"os2",text:"D3 Oral Surgery rotation",target:1,tri:"VIII",disc:"os",type:"rot"},
+  {id:"pd2",text:"D3 Pediatric rotation (Exam, ECC Quiz, 3 Assignments)",target:1,tri:"VIII",disc:"pd",type:"rot"},
+  {id:"pr9",text:"Adult diet analysis / nutritional counseling",target:1,tri:"VIII",disc:"pr",type:"exp"},
+  {id:"pe4",text:"Perio clinical experience procedures (40% of total)",target:1,tri:"VIII",disc:"pe",type:"exp"},
+  {id:"pe5",text:"Periodontal Assist Rotation #1",target:1,tri:"VIII",disc:"pe",type:"rot"},
+  {id:"pe6",text:"Single-Patient CE — start first part",target:1,tri:"VIII",disc:"pe",type:"ce"},
+  {id:"co3",text:"Practice Management modules & CE",target:1,tri:"VIII",disc:"co",type:"ce"},
+  {id:"co4",text:"Ethics & Professionalism modules & CE",target:1,tri:"VIII",disc:"co",type:"ce"},
+  {id:"co5",text:"Health Communication review & CE",target:1,tri:"VIII",disc:"co",type:"ce"},
+  {id:"dx4",text:"FMX on live patient",target:1,tri:"IX",disc:"dx",type:"exp"},
+  {id:"dx7",text:"Diagnosis & Treatment Planning COMBOT #2",target:1,tri:"IX",disc:"dx",type:"exp"},
+  {id:"dx8",text:"Patient Assessment CE",target:1,tri:"IX",disc:"dx",type:"ce"},
+  {id:"dx9",text:"Treatment planning experiences (each ≥70%)",target:5,tri:"IX",disc:"dx",type:"exp"},
+  {id:"dx11",text:"Referral experiences (each ≥70%)",target:5,tri:"IX",disc:"dx",type:"exp"},
+  {id:"dx12",text:"Referral CE",target:1,tri:"IX",disc:"dx",type:"ce"},
+  {id:"op5",text:"Operative QE — Class II",target:1,tri:"IX",disc:"op",type:"qe"},
+  {id:"op6",text:"Operative QE — Class III/IV or Class V",target:1,tri:"IX",disc:"op",type:"qe"},
+  {id:"pd6",text:"QueensCare Rotation 1 + 1 EBD presentation",target:1,tri:"IX",disc:"pd",type:"rot"},
+  {id:"pe7",text:"Perio clinical experience procedures (60% of total)",target:1,tri:"IX",disc:"pe",type:"exp"},
+  {id:"pe8",text:"Pass Single-Patient CE (Foundations + Non-Surgical Therapy)",target:1,tri:"IX",disc:"pe",type:"ce"},
+  {id:"om1",text:"OFP/OM Part I — Pre-session module & assessment",target:1,tri:"IX",disc:"om",type:"rot"},
+  {id:"om2",text:"OFP/OM Part II — Clinical assist (3 hrs)",target:1,tri:"IX",disc:"om",type:"rot"},
+  {id:"om3",text:"OFP/OM Part III — OSCE CE",target:1,tri:"IX",disc:"om",type:"ce"},
+  {id:"sp1",text:"Special Patients Clinical rotation",target:1,tri:"IX",disc:"sp",type:"rot"},
+  {id:"sp2",text:"Special Patients OSCE CE (≥70%)",target:1,tri:"IX",disc:"sp",type:"ce"},
+  {id:"sp3",text:"Behavioral Dentistry OSCE CE (≥70%)",target:1,tri:"IX",disc:"sp",type:"ce"},
+  {id:"sp4",text:"IPE OSCE CE (≥70%)",target:1,tri:"IX",disc:"sp",type:"ce"},
+  {id:"sp5",text:"Hollenbeck Palms Hensel SNF rotation",target:1,tri:"IX",disc:"sp",type:"rot"},
+  {id:"sp6",text:"LAGMC Geriatric Clinic rotation",target:1,tri:"IX",disc:"sp",type:"rot"},
+  {id:"sp7",text:"Geriatric Computer-Based Cases + CE",target:1,tri:"IX",disc:"sp",type:"ce"},
+  {id:"co1",text:"Union Rescue Mission rotation",target:1,tri:"IX",disc:"co",type:"rot"},
+  {id:"co2",text:"Ostrow Community Health qualifying events (4–5 hrs)",target:2,tri:"IX",disc:"co",type:"exp"},
+  {id:"dx5",text:"FMX on live patient",target:1,tri:"X",disc:"dx",type:"exp"},
+  {id:"dx10",text:"Diagnosis & Treatment Planning CE",target:1,tri:"X",disc:"dx",type:"ce"},
+  {id:"op8",text:"Operative CE — Class II",target:1,tri:"X",disc:"op",type:"ce"},
+  {id:"op9",text:"Operative CE — Class III or IV",target:1,tri:"X",disc:"op",type:"ce"},
+  {id:"op10",text:"Operative CE — Class V",target:1,tri:"X",disc:"op",type:"ce"},
+  {id:"op12",text:"Indirect Bonded CAD/CAM Restoration CE",target:1,tri:"X",disc:"op",type:"ce"},
+  {id:"op13",text:"Indirect Cemented Restoration CE",target:1,tri:"X",disc:"op",type:"ce"},
+  {id:"op14",text:"FPD or implant experience in single patient (≥70%)",target:1,tri:"X",disc:"op",type:"exp"},
+  {id:"op15",text:"Tooth Replacement CE — FDP or Implant TOSCE",target:1,tri:"X",disc:"op",type:"ce"},
+  {id:"op18",text:"Digital scanning experiences (D0801 or D0802)",target:2,tri:"X",disc:"op",type:"exp"},
+  {id:"en4",text:"Endodontic Bench CE #1",target:1,tri:"X",disc:"en",type:"ce"},
+  {id:"en3",text:"Molar RCT in Sim Lab (if not done in clinic)",target:1,tri:"X",disc:"en",type:"exp"},
+  {id:"pd10",text:"Mobile Clinic Rotation",target:1,tri:"X",disc:"pd",type:"rot"},
+  {id:"pd16",text:"Pediatric CE — Tx Planning, Behavior & Clinical Skills",target:1,tri:"X",disc:"pd",type:"ce"},
+  {id:"pr13",text:"CAMBRA CE",target:1,tri:"X",disc:"pr",type:"ce"},
+  {id:"pe9",text:"Perio clinical experience procedures (80% of total)",target:1,tri:"X",disc:"pe",type:"exp"},
+  {id:"pe10",text:"Periodontal Assist Rotation #2",target:1,tri:"X",disc:"pe",type:"rot"},
+  {id:"rp2",text:"Complete denture experiences (each ≥70%, in axiUm)",target:2,tri:"X",disc:"rp",type:"exp"},
+  {id:"rp3",text:"Complete Denture CE",target:1,tri:"X",disc:"rp",type:"ce"},
+  {id:"rp4",text:"Cast metal RPD experience (D5213/D5214, ≥70%)",target:1,tri:"X",disc:"rp",type:"exp"},
+  {id:"rp5",text:"Removable Partial Denture CE",target:1,tri:"X",disc:"rp",type:"ce"},
+  {id:"dx13",text:"Assessments of Treatment Outcomes (each ≥70%)",target:2,tri:"XI",disc:"dx",type:"exp"},
+  {id:"dx14",text:"Assessment of Treatment Outcome CE",target:1,tri:"XI",disc:"dx",type:"ce"},
+  {id:"em3",text:"D4 Emergency rotation",target:1,tri:"XI",disc:"em",type:"rot"},
+  {id:"em4",text:"D4 Emergency Patient CE (independent)",target:1,tri:"XI",disc:"em",type:"ce"},
+  {id:"en5",text:"Endodontic Bench CE #2",target:1,tri:"XI",disc:"en",type:"ce"},
+  {id:"en6",text:"Patient-Based Endodontic Treatment CE",target:1,tri:"XI",disc:"en",type:"ce"},
+  {id:"en7",text:"Senior Endo & EBD Group Presentation",target:1,tri:"XI",disc:"en",type:"ce"},
+  {id:"os4",text:"D4 Oral Surgery rotation",target:1,tri:"XI",disc:"os",type:"rot"},
+  {id:"os5",text:"Oral Surgery CE",target:1,tri:"XI",disc:"os",type:"ce"},
+  {id:"op16",text:"Implant Part A (D6005) on patient in axiUm",target:1,tri:"XI",disc:"op",type:"exp"},
+  {id:"op17",text:"Implant Part B (D6007/D6008) on patient in axiUm",target:1,tri:"XI",disc:"op",type:"exp"},
+  {id:"pd9",text:"QueensCare Rotation 2",target:1,tri:"XI",disc:"pd",type:"rot"},
+  {id:"pd14",text:"Stainless steel crown (SSC) on primary tooth",target:1,tri:"XI",disc:"pd",type:"exp"},
+  {id:"pd15",text:"Pulpotomy in primary tooth",target:1,tri:"XI",disc:"pd",type:"exp"},
+  {id:"pe11",text:"Perio clinical experience procedures (90% of total)",target:1,tri:"XI",disc:"pe",type:"exp"},
+];
+
+const TRIS=["VI","VII","VIII","IX","X","XI"];
+const TL={VI:"D3 · Summer",VII:"D3 · Fall",VIII:"D3 · Spring",IX:"D4 · Summer",X:"D4 · Fall",XI:"D4 · Spring"};
+const EU_MS=[{t:30,tri:"VI"},{t:70,tri:"VII"},{t:170,tri:"VIII"},{t:350,tri:"IX"},{t:550,tri:"X"},{t:650,tri:"XI"}];
+
+let state={counts:{},notes:{},euCount:0};
+let filter="all",typeFilter=null;
+let expanded={};TRIS.forEach(t=>expanded[t]=true);
+let notesOpen={};
+
+function load(){try{const s=localStorage.getItem(SK);if(s){state={counts:{},notes:{},euCount:0,...JSON.parse(s)}}}catch{}}
+function save(){try{localStorage.setItem(SK,JSON.stringify(state))}catch{}}
+function gc(id){return state.counts[id]||0}
+function gn(id){return state.notes[id]||""}
+function esc(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
+
+// Partial progress: sum of current / sum of targets
+function calcProgress(){
+  let cur=0,tot=0;
+  ITEMS.forEach(i=>{cur+=Math.min(gc(i.id),i.target);tot+=i.target});
+  CUMUL.forEach(c=>{const mx=c.milestones[c.milestones.length-1].t;cur+=Math.min(gc(c.id),mx);tot+=mx});
+  return{cur,tot,pct:tot?Math.round((cur/tot)*100):0};
+}
+
+function cumulFirstTri(c){return c.milestones[0].tri}
+function cumulDone(c){return gc(c.id)>=c.milestones[c.milestones.length-1].t}
+function itemDone(i){return gc(i.id)>=i.target}
+
+function applyFilters(items,cumuls){
+  let fi=items,fc=cumuls;
+  if(filter==="remaining"){fi=fi.filter(i=>!itemDone(i));fc=fc.filter(c=>!cumulDone(c))}
+  else if(filter==="completed"){fi=fi.filter(i=>itemDone(i));fc=fc.filter(c=>cumulDone(c))}
+  else if(filter!=="all"){fi=fi.filter(i=>i.disc===filter);fc=fc.filter(c=>c.disc===filter)}
+  if(typeFilter){fi=fi.filter(i=>i.type===typeFilter);fc=typeFilter==="exp"?fc:[]}
+  return{fi,fc};
+}
+
+function typeBadge(t){
+  const l={exp:"EXP",qe:"QE",ce:"CE",rot:"ROT"};
+  return'<span class="type-badge '+t+'">'+l[t]+'</span>';
+}
+
+function render(){
+  const prog=calcProgress();
+  const euVal=state.euCount||0;
+  let h='';
+
+  h+='<h1>DDS 2028 Clinic Checklist</h1><p class="subtitle">DPBL 514c · Trimesters VI–XI</p>';
+
+  // EU Dashboard
+  let nextMs=EU_MS.find(m=>euVal<m.t);
+  h+='<div class="eu-dash"><div class="eu-dash-title">📊 Experience Units (EUs)</div>';
+  h+='<div class="eu-input-row">';
+  h+='<input type="number" class="eu-big-input" value="'+euVal+'" onchange="setEU(this.value)" min="0">';
+  h+='<span class="eu-of-total">/ 650</span>';
+  h+='<div class="eu-quick">';
+  h+='<button class="eu-qbtn minus" onclick="adjEU(-5)">−5</button>';
+  h+='<button class="eu-qbtn minus" onclick="adjEU(-1)">−1</button>';
+  h+='<button class="eu-qbtn" onclick="adjEU(1)">+1</button>';
+  h+='<button class="eu-qbtn" onclick="adjEU(5)">+5</button>';
+  h+='<button class="eu-qbtn" onclick="adjEU(10)">+10</button>';
+  h+='</div></div>';
+  h+='<div class="eu-milestones">';
+  EU_MS.forEach(m=>{
+    const hit=euVal>=m.t;const isNext=nextMs&&m.t===nextMs.t;
+    h+='<span class="eu-ms'+(hit?' hit':'')+(isNext?' next':'')+'">'+m.tri+': '+m.t+'</span>';
+  });
+  h+='</div>';
+  const euPct=Math.min((euVal/650)*100,100);
+  h+='<div class="eu-bar-wrap"><div class="eu-bar-fill" style="width:'+euPct+'%;background:'+(euVal>=650?'#16a34a':'linear-gradient(90deg,#2563eb,#7c3aed)')+'"></div></div>';
+  h+='</div>';
+
+  // Overall Progress — partial
+  h+='<div class="oprog">';
+  h+='<div class="oprog-bar"><div class="oprog-fill '+(prog.pct>=100?'done':'active')+'" style="width:'+prog.pct+'%"></div></div>';
+  h+='<div class="oprog-pct'+(prog.pct>45?' light':'')+'">'+prog.pct+'% Overall Progress</div>';
+  h+='</div>';
+  h+='<p class="oprog-sub">'+prog.cur+' / '+prog.tot+' total units of progress across all requirements</p>';
+
+  // Filters
+  h+='<div class="filter-row">';
+  ["all","remaining","completed"].forEach(k=>{
+    h+='<button class="fbtn'+(filter===k?' on':'')+'" onclick="setF(\''+k+'\')">'+k.charAt(0).toUpperCase()+k.slice(1)+'</button>';
+  });
+  h+='</div>';
+  h+='<div class="filter-row">';
+  [{k:"exp",label:"Experiences",cls:"on-exp"},{k:"qe",label:"QEs",cls:"on-qe"},{k:"ce",label:"CEs",cls:"on-ce"},{k:"rot",label:"Rotations",cls:"on-rot"}].forEach(({k,label,cls})=>{
+    const a=typeFilter===k;
+    h+='<button class="tbtn'+(a?' '+cls:'')+'" onclick="setTF(\''+(a?'':k)+'\')">'+label+'</button>';
+  });
+  h+='</div>';
+  h+='<div class="filter-row mb">';
+  DISC.forEach(d=>{
+    const a=filter===d.key;const st=a?'border-color:'+d.color+';background:'+d.color+';color:#fff':'';
+    h+='<button class="fbtn'+(a?' disc-on':'')+'" style="'+st+'" onclick="setF(\''+(a?'all':d.key)+'\')"><span style="font-size:11px">'+d.icon+'</span>'+esc(d.name)+'</button>';
+  });
+  h+='</div>';
+
+  // Sections
+  TRIS.forEach(tri=>{
+    const isD4=["IX","X","XI"].includes(tri);
+    let triItems=ITEMS.filter(i=>i.tri===tri);
+    let triCumuls=CUMUL.filter(c=>cumulFirstTri(c)===tri);
+    const{fi,fc}=applyFilters(triItems,triCumuls);
+    if(fi.length===0&&fc.length===0)return;
+
+    // Section progress (partial)
+    let sCur=0,sTot=0;
+    fi.forEach(i=>{sCur+=Math.min(gc(i.id),i.target);sTot+=i.target});
+    fc.forEach(c=>{const mx=c.milestones[c.milestones.length-1].t;sCur+=Math.min(gc(c.id),mx);sTot+=mx});
+    const sPct=sTot?Math.round((sCur/sTot)*100):0;
+    const isOpen=expanded[tri];
+
+    h+='<div class="section'+(isD4?' d4':'')+'">';
+    h+='<button class="section-header" onclick="togSec(\''+tri+'\')">';
+    h+='<div class="tri-badge '+(isD4?'d4':'d3')+'">'+tri+'</div>';
+    h+='<div style="flex:1"><div class="stitle">Trimester '+tri+'</div>';
+    h+='<div class="ssub">'+(TL[tri]||tri)+' · '+sPct+'% complete</div></div>';
+    h+='<div class="mini-bar"><div class="mini-bar-fill" style="width:'+sPct+'%;background:'+(isD4?'#7c3aed':'#2563eb')+'"></div></div>';
+    h+='<span class="chev'+(isOpen?' open':'')+'">▾</span></button>';
+
+    if(isOpen){
+      h+='<div class="section-body">';
+
+      // Cumulative trackers
+      fc.forEach(c=>{
+        const cur=gc(c.id);const mx=c.milestones[c.milestones.length-1].t;
+        const allHit=cumulDone(c);const disc=DM[c.disc];
+        const fillPct=Math.min((cur/mx)*100,100);
+        const hasNote=!!gn(c.id);const noteOpen=!!notesOpen[c.id];
+
+        h+='<div class="item'+(allHit?' done-item':'')+'">';
+        h+='<div class="item-top">'+typeBadge("exp");
+        h+='<span class="item-text'+(allHit?' done-text':'')+'">'+esc(c.name)+'</span>';
+        h+='<span class="disc-tag" style="color:'+disc.color+';background:'+disc.color+'15">'+disc.icon+' '+esc(disc.name)+'</span></div>';
+        h+='<div class="counter-row">';
+        h+='<button class="cbtn" onclick="adj(\''+c.id+'\',-1,'+mx+')"'+(cur<=0?' disabled':'')+'>−</button>';
+        h+='<span class="cval'+(allHit?' done-c':'')+'">'+cur+' / '+mx+'</span>';
+        h+='<button class="cbtn" onclick="adj(\''+c.id+'\',1,'+mx+')"'+(cur>=mx?' disabled':'')+'>+</button>';
+        h+='<div class="cm-dots">';
+        c.milestones.forEach(m=>{h+='<span class="cm-dot'+(cur>=m.t?' hit':'')+'">'+m.t+' ('+m.tri+')</span>'});
+        h+='</div>';
+        h+='<div class="item-bar"><div class="item-bar-fill" style="width:'+fillPct+'%;background:'+(allHit?'#16a34a':disc.color)+'"></div></div></div>';
+        h+='<button class="notes-toggle'+(hasNote?' has-note':'')+'" onclick="togNote(\''+c.id+'\')">'+(noteOpen?'▾ Hide notes':'▸ Notes'+(hasNote?' ✎':''))+'</button>';
+        if(noteOpen)h+='<textarea class="notes-area" onchange="setNote(\''+c.id+'\',this.value)" placeholder="Patient, tooth #, grade…">'+esc(gn(c.id))+'</textarea>';
+        h+='</div>';
+      });
+
+      // Regular items
+      fi.forEach(item=>{
+        const cur=gc(item.id);const done=cur>=item.target;const disc=DM[item.disc];
+        const hasNote=!!gn(item.id);const noteOpen=!!notesOpen[item.id];
+
+        h+='<div class="item'+(done?' done-item':'')+'">';
+        h+='<div class="item-top">'+typeBadge(item.type);
+        h+='<span class="item-text'+(done?' done-text':'')+'">'+esc(item.text)+'</span>';
+        h+='<span class="disc-tag" style="color:'+disc.color+';background:'+disc.color+'15">'+disc.icon+' '+esc(disc.name)+'</span></div>';
+
+        if(item.target===1){
+          h+='<div class="toggle-row">';
+          h+='<button class="toggle-btn'+(done?' on':'')+'" onclick="sc(\''+item.id+'\','+(done?0:1)+',1)"><div class="toggle-knob"></div></button>';
+          h+='<span class="toggle-label'+(done?' on':'')+'">'+(done?'Completed':'Not yet')+'</span></div>';
+        }else{
+          const fillPct=Math.min((cur/item.target)*100,100);
+          h+='<div class="counter-row">';
+          h+='<button class="cbtn" onclick="adj(\''+item.id+'\',-1,'+item.target+')"'+(cur<=0?' disabled':'')+'>−</button>';
+          h+='<span class="cval'+(done?' done-c':'')+'">'+cur+' / '+item.target+'</span>';
+          h+='<button class="cbtn" onclick="adj(\''+item.id+'\',1,'+item.target+')"'+(cur>=item.target?' disabled':'')+'>+</button>';
+          h+='<div class="item-bar"><div class="item-bar-fill" style="width:'+fillPct+'%;background:'+(done?'#16a34a':disc.color)+'"></div></div></div>';
+        }
+        h+='<button class="notes-toggle'+(hasNote?' has-note':'')+'" onclick="togNote(\''+item.id+'\')">'+(noteOpen?'▾ Hide notes':'▸ Notes'+(hasNote?' ✎':''))+'</button>';
+        if(noteOpen)h+='<textarea class="notes-area" onchange="setNote(\''+item.id+'\',this.value)" placeholder="Patient, tooth #, grade…">'+esc(gn(item.id))+'</textarea>';
+        h+='</div>';
+      });
+
+      h+='</div>';
+    }
+    h+='</div>';
+  });
+
+  h+='<div class="bottom-wrap"><button class="reset-btn" onclick="resetAll()">Reset All</button></div>';
+  h+='<div class="io-wrap">';
+  h+='<button class="io-btn" onclick="exportD()">💾 Export Progress</button>';
+  h+='<button class="io-btn" onclick="document.getElementById(\'impF\').click()">📂 Import Progress</button>';
+  h+='<input type="file" id="impF" accept=".json" style="display:none" onchange="importD(event)">';
+  h+='</div>';
+
+  document.getElementById('app').innerHTML=h;
+}
+
+window.setF=function(f){filter=f;render()};
+window.setTF=function(t){typeFilter=t||null;render()};
+window.togSec=function(t){expanded[t]=!expanded[t];render()};
+window.sc=function(id,v,mx){state.counts[id]=Math.max(0,Math.min(v,mx));save();render()};
+window.adj=function(id,d,mx){sc(id,gc(id)+d,mx)};
+window.setEU=function(v){const n=parseInt(v,10);if(!isNaN(n)){state.euCount=Math.max(0,n);save();render()}};
+window.adjEU=function(d){state.euCount=Math.max(0,(state.euCount||0)+d);save();render()};
+window.togNote=function(id){notesOpen[id]=!notesOpen[id];render()};
+window.setNote=function(id,v){state.notes[id]=v;save()};
+window.resetAll=function(){if(confirm("Reset all progress and notes? This can't be undone.")){state={counts:{},notes:{},euCount:0};save();render()}};
+window.exportD=function(){
+  const b=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(b);
+  a.download='dds2028_backup_'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(a.href);
+};
+window.importD=function(e){
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();r.onload=function(ev){
+    try{const d=JSON.parse(ev.target.result);if(typeof d==='object'&&d!==null){state={counts:{},notes:{},euCount:0,...d};save();render();alert('Imported!')}}
+    catch{alert('Invalid file.')}
+  };r.readAsText(f);e.target.value='';
+};
+
+load();render();
+</script>
+</body>
+</html>
